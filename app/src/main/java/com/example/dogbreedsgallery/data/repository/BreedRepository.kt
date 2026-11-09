@@ -1,14 +1,16 @@
+
 package com.example.dogbreedsgallery.data.repository
 
-import com.example.dogbreedsgallery.data.local.datasource.LocalDataSource
-import com.example.dogbreedsgallery.data.local.entity.BreedEntity
-import com.example.dogbreedsgallery.data.remote.datasource.RemoteDataSource
+import com.example.dogbreedsgallery.data.local.BreedEntity
+import com.example.dogbreedsgallery.data.local.LocalDataSource
+import com.example.dogbreedsgallery.data.remote.DogDataSource
+import com.example.dogbreedsgallery.data.remote.DogImageDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 
 class BreedRepository(
     private val localDataSource: LocalDataSource,
-    private val remoteDataSource: RemoteDataSource
+    private val dogDataSource: DogDataSource
 ) {
 
     // Получение пород из локальной базы
@@ -19,13 +21,13 @@ class BreedRepository(
     // Обновление данных из интернета
     suspend fun refreshBreeds() {
 
-        // Получаем данные с сервера
-        val remoteBreeds = remoteDataSource.getBreeds()
+        // Получаем список пород с сервера
+        val remoteBreeds = dogDataSource.getBreeds()
 
-        // Получаем текущие данные из локальной базы
+        // Получаем уже сохранённые породы
         val localBreeds = localDataSource.getAllBreeds().first()
 
-        // Запоминаем избранные породы
+        // Сохраняем информацию об избранных породах
         val favoriteIds = localBreeds
             .filter { it.isFavorite }
             .map { it.id }
@@ -33,7 +35,6 @@ class BreedRepository(
 
         // Преобразуем DTO в Entity
         val breeds = remoteBreeds.map { dto ->
-
             BreedEntity(
                 id = dto.id,
                 name = dto.name,
@@ -46,7 +47,7 @@ class BreedRepository(
             )
         }
 
-        // Сохраняем данные в Room
+        // Сохраняем породы в Room
         localDataSource.saveBreeds(breeds)
     }
 
@@ -63,5 +64,10 @@ class BreedRepository(
     // Получение породы по ID
     fun getBreedById(breedId: Int): Flow<BreedEntity?> {
         return localDataSource.getBreedById(breedId)
+    }
+
+    // Получение фотографий породы из интернета
+    suspend fun getBreedImages(breedId: Int): List<DogImageDto> {
+        return dogDataSource.getBreedImages(breedId)
     }
 }
