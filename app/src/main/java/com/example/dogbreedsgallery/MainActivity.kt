@@ -2,19 +2,22 @@ package com.example.dogbreedsgallery
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.ui.NavDisplay
 import com.example.dogbreedsgallery.di.AppContainer
 import com.example.dogbreedsgallery.ui.BreedDetailsScreen
 import com.example.dogbreedsgallery.ui.FavoriteScreen
@@ -23,34 +26,27 @@ import com.example.dogbreedsgallery.ui.theme.DogbreedsgalleryTheme
 import com.example.dogbreedsgallery.ui.viewmodel.BreedViewModel
 import com.example.dogbreedsgallery.ui.viewmodel.BreedViewModelFactory
 
-// Три экрана приложения
-private enum class AppScreen {
-    Home,
-    Details,
-    Favorites
-}
+private data object HomeRoute
+private data object FavoritesRoute
+private data class DetailsRoute(val breedId: Int)
 
 class MainActivity : ComponentActivity() {
 
-    // Создаём контейнер с зависимостями
     private val appContainer by lazy {
         AppContainer(applicationContext)
     }
 
-    // Создаём ViewModel
     private val breedViewModel: BreedViewModel by viewModels {
         BreedViewModelFactory(appContainer.breedRepository)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         enableEdgeToEdge()
 
         setContent {
             DogbreedsgalleryTheme {
 
-                // Получаем данные для экранов
                 val uiState by breedViewModel.uiState.collectAsStateWithLifecycle()
                 val favoriteBreeds by breedViewModel.favoriteBreeds.collectAsStateWithLifecycle()
                 val selectedBreed by breedViewModel.selectedBreed.collectAsStateWithLifecycle()
@@ -58,106 +54,136 @@ class MainActivity : ComponentActivity() {
                 val isImagesLoading by breedViewModel.isImagesLoading.collectAsStateWithLifecycle()
                 val imagesError by breedViewModel.imagesError.collectAsStateWithLifecycle()
 
-                // Текущий и предыдущий экраны
-                var currentScreen by remember {
-                    mutableStateOf(AppScreen.Home)
+                // Стек экранов Navigation 3
+                val backStack = remember {
+                    mutableStateListOf<Any>(HomeRoute)
                 }
 
-                var previousScreen by remember {
-                    mutableStateOf(AppScreen.Home)
-                }
-
-                // Обработка системной кнопки "Назад"
-                BackHandler(
-                    enabled = currentScreen != AppScreen.Home
-                ) {
-                    if (currentScreen == AppScreen.Details) {
-                        breedViewModel.closeBreed()
-                    }
-
-                    currentScreen = if (currentScreen == AppScreen.Details) {
-                        previousScreen
-                    } else {
-                        AppScreen.Home
-                    }
-                }
+                val currentRoute = backStack.lastOrNull()
 
                 Scaffold(
-                    modifier = Modifier.fillMaxSize()
-                ) { innerPadding ->
+                    modifier = Modifier.fillMaxSize(),
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                    ) {
+                    // Нижняя панель отображается только на основных экранах
+                    bottomBar = {
+                        if (currentRoute == HomeRoute ||
+                            currentRoute == FavoritesRoute
+                        ) {
+                            NavigationBar {
 
-                        when (currentScreen) {
-
-                            // Главный экран
-                            AppScreen.Home -> {
-                                HomeScreen(
-                                    uiState = uiState,
-                                    onSearchQueryChange = breedViewModel::onSearchQueryChange,
-
-                                    onBreedClick = { breedId ->
-                                        previousScreen = AppScreen.Home
-                                        breedViewModel.openBreed(breedId)
-                                        currentScreen = AppScreen.Details
+                                NavigationBarItem(
+                                    selected = currentRoute == HomeRoute,
+                                    onClick = {
+                                        backStack.clear()
+                                        backStack.add(HomeRoute)
                                     },
-
-                                    onFavoriteClick = breedViewModel::toggleFavorite,
-
-                                    onFavoritesClick = {
-                                        currentScreen = AppScreen.Favorites
+                                    icon = {
+                                        Text("⌂")
+                                    },
+                                    label = {
+                                        Text("Главная")
                                     }
                                 )
-                            }
 
-                            // Подробности породы
-                            AppScreen.Details -> {
-                                if (selectedBreed != null) {
-                                    BreedDetailsScreen(
-                                        breed = selectedBreed!!,
-                                        images = breedImages,
-                                        isImagesLoading = isImagesLoading,
-                                        imagesError = imagesError,
-
-                                        onBackClick = {
-                                            breedViewModel.closeBreed()
-                                            currentScreen = previousScreen
-                                        },
-
-                                        onFavoriteClick = breedViewModel::toggleFavorite
-                                    )
-                                } else {
-                                    Text(
-                                        text = "Загружаем информацию о породе...",
-                                        modifier = Modifier.align(Alignment.Center)
-                                    )
-                                }
-                            }
-
-                            // Избранное
-                            AppScreen.Favorites -> {
-                                FavoriteScreen(
-                                    breeds = favoriteBreeds,
-
-                                    onBreedClick = { breedId ->
-                                        previousScreen = AppScreen.Favorites
-                                        breedViewModel.openBreed(breedId)
-                                        currentScreen = AppScreen.Details
+                                NavigationBarItem(
+                                    selected = currentRoute == FavoritesRoute,
+                                    onClick = {
+                                        backStack.clear()
+                                        backStack.add(FavoritesRoute)
                                     },
-
-                                    onFavoriteClick = breedViewModel::toggleFavorite,
-
-                                    onBackClick = {
-                                        currentScreen = AppScreen.Home
+                                    icon = {
+                                        Text("♥")
+                                    },
+                                    label = {
+                                        Text("Избранное")
                                     }
                                 )
                             }
                         }
                     }
+                ) { innerPadding ->
+
+                    NavDisplay(
+                        backStack = backStack,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding),
+
+                        onBack = {
+                            if (backStack.size > 1) {
+                                if (backStack.lastOrNull() is DetailsRoute) {
+                                    breedViewModel.closeBreed()
+                                }
+
+                                backStack.removeLastOrNull()
+                            }
+                        },
+
+                        entryProvider = { key ->
+
+                            when (key) {
+
+                                // Главная
+                                HomeRoute -> NavEntry(key) {
+                                    HomeScreen(
+                                        uiState = uiState,
+                                        onSearchQueryChange = breedViewModel::onSearchQueryChange,
+                                        onBreedClick = { breedId ->
+                                            breedViewModel.openBreed(breedId)
+                                            backStack.add(DetailsRoute(breedId))
+                                        },
+                                        onFavoriteClick = breedViewModel::toggleFavorite,
+                                        onFavoritesClick = {
+                                            backStack.add(FavoritesRoute)
+                                        },
+                                        onRefresh = breedViewModel::refreshBreeds
+                                    )
+                                }
+
+                                // Избранное
+                                FavoritesRoute -> NavEntry(key) {
+                                    FavoriteScreen(
+                                        breeds = favoriteBreeds,
+                                        onBreedClick = { breedId ->
+                                            breedViewModel.openBreed(breedId)
+                                            backStack.add(DetailsRoute(breedId))
+                                        },
+                                        onFavoriteClick = breedViewModel::toggleFavorite,
+                                        onBackClick = {
+                                            backStack.clear()
+                                            backStack.add(HomeRoute)
+                                        }
+                                    )
+                                }
+
+                                // Подробности породы
+                                is DetailsRoute -> NavEntry(key) {
+
+                                    if (selectedBreed != null &&
+                                        selectedBreed?.id == key.breedId
+                                    ) {
+                                        BreedDetailsScreen(
+                                            breed = selectedBreed!!,
+                                            images = breedImages,
+                                            isImagesLoading = isImagesLoading,
+                                            imagesError = imagesError,
+                                            onBackClick = {
+                                                breedViewModel.closeBreed()
+                                                backStack.removeLastOrNull()
+                                            },
+                                            onFavoriteClick = breedViewModel::toggleFavorite
+                                        )
+                                    } else {
+                                        Text("Загружаем информацию о породе...")
+                                    }
+                                }
+
+                                else -> NavEntry(key) {
+                                    Text("Экран не найден")
+                                }
+                            }
+                        }
+                    )
                 }
             }
         }

@@ -1,6 +1,8 @@
 package com.example.dogbreedsgallery.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -9,35 +11,53 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
-
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-
-import coil.compose.AsyncImage
-
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
+import coil.request.CachePolicy
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
 import com.example.dogbreedsgallery.data.local.BreedEntity
 import com.example.dogbreedsgallery.ui.viewmodel.BreedUiState
 
-import androidx.compose.material3.TextButton
 
-// 1. Карточка породы собаки
+// Заглушка для фотографии
+@Composable
+private fun ImagePlaceholder(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .background(Color(0xFFF1E7DF)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "🐶",
+            style = MaterialTheme.typography.displayMedium
+        )
+    }
+}
 
+// Карточка породы
 @Composable
 fun BreedCard(
     breed: BreedEntity,
@@ -45,48 +65,66 @@ fun BreedCard(
     onFavoriteClick: (Int, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
+    val imageRequest = ImageRequest.Builder(context)
+        .data(breed.imageUrl.takeIf { it.isNotBlank() })
+        .memoryCachePolicy(CachePolicy.ENABLED)
+        .diskCachePolicy(CachePolicy.ENABLED)
+        .build()
 
     Card(
         onClick = onClick,
         modifier = modifier
     ) {
-
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
 
-            // Фотография породы
-            AsyncImage(
-                model = breed.imageUrl.takeIf {
-                    it.isNotBlank()
-                },
-                contentDescription = breed.name,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp),
-                contentScale = ContentScale.Crop
-            )
+            if (breed.imageUrl.isBlank()) {
+                ImagePlaceholder(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                )
+            } else {
+                SubcomposeAsyncImage(
+                    model = imageRequest,
+                    contentDescription = breed.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp),
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        ImagePlaceholder(
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    },
+                    error = {
+                        ImagePlaceholder(
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    },
+                    success = {
+                        SubcomposeAsyncImageContent()
+                    }
+                )
+            }
 
-
-            // Название и кнопка избранного
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
-
-                    // Название породы
                     Text(
                         text = breed.name,
                         style = MaterialTheme.typography.titleMedium
                     )
 
-                    // Характер породы
                     Text(
                         text = breed.temperament.ifBlank {
                             "Характер не указан"
@@ -96,8 +134,6 @@ fun BreedCard(
                     )
                 }
 
-
-                // Кнопка избранного
                 IconButton(
                     onClick = {
                         onFavoriteClick(
@@ -106,9 +142,9 @@ fun BreedCard(
                         )
                     }
                 ) {
-
                     Text(
-                        text = if (breed.isFavorite) "♥" else "♡"
+                        text = if (breed.isFavorite) "♥" else "♡",
+                        color = Color(0xFFE47777)
                     )
                 }
             }
@@ -116,8 +152,8 @@ fun BreedCard(
     }
 }
 
-// 2. Главный экран приложения
-
+// Главный экран
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     uiState: BreedUiState,
@@ -125,17 +161,17 @@ fun HomeScreen(
     onBreedClick: (Int) -> Unit,
     onFavoriteClick: (Int, Boolean) -> Unit,
     onFavoritesClick: () -> Unit,
+    onRefresh: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-
     Column(
         modifier = modifier.fillMaxSize()
     ) {
 
-        // Заголовок
         Text(
             text = "Dog Breeds Gallery",
             style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(16.dp)
         )
 
@@ -146,7 +182,6 @@ fun HomeScreen(
             Text("♥ Избранное")
         }
 
-        // Поисковая строка
         OutlinedTextField(
             value = uiState.searchQuery,
             onValueChange = onSearchQueryChange,
@@ -159,72 +194,77 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp)
         )
 
-
         Spacer(modifier = Modifier.height(12.dp))
 
-
-        // Индикатор загрузки
-        if (uiState.isLoading) {
-
-            LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
-
-        // Сообщение об ошибке
         uiState.errorMessage?.let { error ->
-
             Text(
                 text = error,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = MaterialTheme.colorScheme.error
             )
         }
 
-
-        // Список пород
-        if (uiState.breeds.isEmpty()) {
-
-            if (uiState.isLoading) {
-
-                CircularProgressIndicator(
-                    modifier = Modifier.align(
-                        Alignment.CenterHorizontally
-                    )
-                )
-
-            } else if (uiState.errorMessage == null) {
-
-                Text(
-                    text = "Породы не найдены",
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-
-        } else {
+        // Обновление списка свайпом вниз
+        PullToRefreshBox(
+            isRefreshing = uiState.isLoading,
+            onRefresh = onRefresh,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
 
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = 160.dp),
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
 
-                items(
-                    items = uiState.breeds,
-                    key = { breed -> breed.id }
-                ) { breed ->
+                if (uiState.breeds.isEmpty()) {
 
-                    BreedCard(
-                        breed = breed,
+                    item(
+                        span = {
+                            GridItemSpan(maxLineSpan)
+                        }
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            when {
+                                uiState.isLoading -> {
+                                    CircularProgressIndicator()
+                                }
 
-                        onClick = {
-                            onBreedClick(breed.id)
-                        },
+                                uiState.errorMessage != null -> {
+                                    Text("Не удалось загрузить породы")
+                                }
 
-                        onFavoriteClick = onFavoriteClick
-                    )
+                                else -> {
+                                    Text("Породы не найдены")
+                                }
+                            }
+                        }
+                    }
+
+                } else {
+
+                    items(
+                        items = uiState.breeds,
+                        key = { breed -> breed.id }
+                    ) { breed ->
+
+                        BreedCard(
+                            breed = breed,
+                            onClick = {
+                                onBreedClick(breed.id)
+                            },
+                            onFavoriteClick = onFavoriteClick
+                        )
+                    }
                 }
             }
         }

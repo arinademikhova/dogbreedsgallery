@@ -2,6 +2,7 @@ package com.example.dogbreedsgallery.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +19,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -27,10 +29,37 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.example.dogbreedsgallery.data.local.BreedEntity
+
+@Composable
+private fun DetailsImagePlaceholder(
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false
+) {
+    Box(
+        modifier = modifier
+            .background(Color(0xFFF1E7DF)),
+        contentAlignment = Alignment.Center
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                color = Color(0xFF9B7058)
+            )
+        } else {
+            Text(
+                text = "🐶",
+                style = MaterialTheme.typography.displayLarge
+            )
+        }
+    }
+}
 
 @Composable
 fun BreedDetailsScreen(
@@ -48,7 +77,9 @@ fun BreedDetailsScreen(
     }
 
     val pagerState = rememberPagerState(
-        pageCount = { galleryImages.size }
+        pageCount = {
+            galleryImages.size
+        }
     )
 
     Column(
@@ -58,6 +89,7 @@ fun BreedDetailsScreen(
             .verticalScroll(rememberScrollState())
             .padding(bottom = 24.dp)
     ) {
+
         // Кнопка возврата
         TextButton(
             onClick = onBackClick,
@@ -69,6 +101,7 @@ fun BreedDetailsScreen(
             )
         }
 
+        // Название породы
         Text(
             text = breed.name,
             modifier = Modifier.padding(horizontal = 20.dp),
@@ -81,23 +114,51 @@ fun BreedDetailsScreen(
 
         // Галерея фотографий
         if (galleryImages.isNotEmpty()) {
+
+            val context = LocalContext.current
+
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(280.dp)
             ) { page ->
-                AsyncImage(
-                    model = galleryImages[page],
+
+                val imageUrl = galleryImages[page]
+
+                val imageRequest = remember(imageUrl) {
+                    ImageRequest.Builder(context)
+                        .data(imageUrl)
+                        .memoryCachePolicy(CachePolicy.ENABLED)
+                        .diskCachePolicy(CachePolicy.ENABLED)
+                        .build()
+                }
+
+                SubcomposeAsyncImage(
+                    model = imageRequest,
                     contentDescription = "Фотография породы ${breed.name}",
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        DetailsImagePlaceholder(
+                            modifier = Modifier.fillMaxSize(),
+                            isLoading = true
+                        )
+                    },
+                    error = {
+                        DetailsImagePlaceholder(
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    },
+                    success = {
+                        SubcomposeAsyncImageContent()
+                    }
                 )
             }
 
-            // Индикатор текущей фотографии
+            // Номер текущей фотографии
             if (galleryImages.size > 1) {
                 Row(
                     modifier = Modifier
@@ -112,9 +173,20 @@ fun BreedDetailsScreen(
                     )
                 }
             }
+
+        } else {
+
+            // Если фотографий нет, показываем заглушку
+            DetailsImagePlaceholder(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(280.dp)
+                    .padding(horizontal = 16.dp),
+                isLoading = isImagesLoading
+            )
         }
 
-        if (isImagesLoading) {
+        if (isImagesLoading && galleryImages.isEmpty()) {
             Text(
                 text = "Загружаем фотографии...",
                 modifier = Modifier.padding(20.dp),
@@ -134,6 +206,7 @@ fun BreedDetailsScreen(
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
+
             Text(
                 text = "О породе",
                 style = MaterialTheme.typography.titleLarge,
@@ -144,7 +217,8 @@ fun BreedDetailsScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = breed.description?.takeIf { it.isNotBlank() }
+                text = breed.description
+                    ?.takeIf { it.isNotBlank() }
                     ?: "Описание этой породы пока отсутствует.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color(0xFF66564D)
@@ -163,21 +237,27 @@ fun BreedDetailsScreen(
 
             DetailInfoCard(
                 title = "Характер",
-                value = breed.temperament.ifBlank { "Не указан" }
+                value = breed.temperament.ifBlank {
+                    "Не указан"
+                }
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             DetailInfoCard(
                 title = "Происхождение",
-                value = breed.origin?.takeIf { it.isNotBlank() } ?: "Не указано"
+                value = breed.origin
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "Не указано"
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             DetailInfoCard(
                 title = "Продолжительность жизни",
-                value = breed.lifeSpan.ifBlank { "Не указана" }
+                value = breed.lifeSpan.ifBlank {
+                    "Не указана"
+                }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -185,7 +265,10 @@ fun BreedDetailsScreen(
             // Добавление в избранное
             Button(
                 onClick = {
-                    onFavoriteClick(breed.id, !breed.isFavorite)
+                    onFavoriteClick(
+                        breed.id,
+                        !breed.isFavorite
+                    )
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),

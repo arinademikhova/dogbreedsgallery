@@ -11,8 +11,8 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.http.GET
 import retrofit2.http.Query
 
-import com.example.dogbreedsgallery.BreedDto
-import com.example.dogbreedsgallery.DogImageDto
+import com.example.dogbreedsgallery.data.remote.BreedDto
+import com.example.dogbreedsgallery.data.remote.DogImageDto
 
 // Интерфейс с запросами к TheDogAPI
 interface DogApiService {

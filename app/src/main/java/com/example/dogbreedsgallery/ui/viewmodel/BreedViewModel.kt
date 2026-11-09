@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.dogbreedsgallery.data.local.BreedEntity
 import com.example.dogbreedsgallery.data.repository.BreedRepository
 
-import com.example.dogbreedsgallery.DogImageDto
+import com.example.dogbreedsgallery.data.remote.DogImageDto
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
