@@ -1,10 +1,10 @@
-
 package com.example.dogbreedsgallery.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 
-import com.example.dogbreedsgallery.data.local.entity.BreedEntity
+import com.example.dogbreedsgallery.data.local.BreedEntity
 import com.example.dogbreedsgallery.data.repository.BreedRepository
 
 import kotlinx.coroutines.CancellationException
@@ -16,6 +16,25 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+
+// 1. Состояние интерфейса
+
+data class BreedUiState(
+
+    // Список пород, отображаемых на экране
+    val breeds: List<BreedEntity> = emptyList(),
+
+    // Поисковый запрос пользователя
+    val searchQuery: String = "",
+
+    // Состояние загрузки
+    val isLoading: Boolean = false,
+
+    // Сообщение об ошибке
+    val errorMessage: String? = null
+)
+
+// 2. ViewModel — управление данными интерфейса
 
 class BreedViewModel(
     private val repository: BreedRepository
@@ -136,5 +155,27 @@ class BreedViewModel(
     // Очистка сообщения об ошибке
     fun clearError() {
         errorMessage.value = null
+    }
+}
+
+// 3. Фабрика для создания ViewModel
+
+class BreedViewModelFactory(
+    private val repository: BreedRepository
+) : ViewModelProvider.Factory {
+
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>
+    ): T {
+
+        if (modelClass.isAssignableFrom(BreedViewModel::class.java)) {
+
+            @Suppress("UNCHECKED_CAST")
+            return BreedViewModel(repository) as T
+        }
+
+        throw IllegalArgumentException(
+            "Unknown ViewModel class"
+        )
     }
 }
