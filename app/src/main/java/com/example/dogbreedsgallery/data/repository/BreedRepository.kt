@@ -4,7 +4,7 @@ package com.example.dogbreedsgallery.data.repository
 import com.example.dogbreedsgallery.data.local.BreedEntity
 import com.example.dogbreedsgallery.data.local.LocalDataSource
 import com.example.dogbreedsgallery.data.remote.DogDataSource
-import com.example.dogbreedsgallery.data.remote.DogImageDto
+import com.example.dogbreedsgallery.DogImageDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 

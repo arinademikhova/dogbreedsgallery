@@ -1,6 +1,7 @@
 
 package com.example.dogbreedsgallery.data.remote
-
+import com.example.dogbreedsgallery.BreedDto
+import com.example.dogbreedsgallery.DogImageDto
 class DogDataSource(
     private val dogApiService: DogApiService
 ) {

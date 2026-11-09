@@ -11,6 +11,9 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.http.GET
 import retrofit2.http.Query
 
+import com.example.dogbreedsgallery.BreedDto
+import com.example.dogbreedsgallery.DogImageDto
+
 // Интерфейс с запросами к TheDogAPI
 interface DogApiService {
 
@@ -31,6 +34,7 @@ interface DogApiService {
 object DogApiClient {
 
     private const val BASE_URL = "https://api.thedogapi.com/v1/"
+
 
     // Настройка Moshi для обработки JSON
     private val moshi = Moshi.Builder()

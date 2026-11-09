@@ -34,10 +34,9 @@ import coil.compose.AsyncImage
 import com.example.dogbreedsgallery.data.local.BreedEntity
 import com.example.dogbreedsgallery.ui.viewmodel.BreedUiState
 
+import androidx.compose.material3.TextButton
 
-// --------------------------------------------------
 // 1. Карточка породы собаки
-// --------------------------------------------------
 
 @Composable
 fun BreedCard(
@@ -117,10 +116,7 @@ fun BreedCard(
     }
 }
 
-
-// --------------------------------------------------
 // 2. Главный экран приложения
-// --------------------------------------------------
 
 @Composable
 fun HomeScreen(
@@ -128,6 +124,7 @@ fun HomeScreen(
     onSearchQueryChange: (String) -> Unit,
     onBreedClick: (Int) -> Unit,
     onFavoriteClick: (Int, Boolean) -> Unit,
+    onFavoritesClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -142,6 +139,12 @@ fun HomeScreen(
             modifier = Modifier.padding(16.dp)
         )
 
+        TextButton(
+            onClick = onFavoritesClick,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
+            Text("♥ Избранное")
+        }
 
         // Поисковая строка
         OutlinedTextField(
