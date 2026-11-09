@@ -42,15 +42,7 @@ android {
 
 dependencies {
 
-    // ------------------------------------------
-    // 1. Базовые Android-библиотеки
-    // ------------------------------------------
-
     implementation(libs.androidx.core.ktx)
-
-    // ------------------------------------------
-    // 2. Jetpack Compose
-    // ------------------------------------------
 
     implementation(platform(libs.androidx.compose.bom))
 
@@ -60,18 +52,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
 
-    // ------------------------------------------
-    // 3. ViewModel и Lifecycle
-    // ------------------------------------------
-
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-
-    // ------------------------------------------
-    // 4. Kotlin Coroutines и Flow
-    // ------------------------------------------
 
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.android)
@@ -89,6 +73,8 @@ dependencies {
 
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.2")
+    implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
 
     implementation(libs.coil.compose)
 
