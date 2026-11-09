@@ -1,4 +1,15 @@
+import java.util.Properties
 
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use {
+        localProperties.load(it)
+    }
+}
+
+val dogApiKey = localProperties.getProperty("DOG_API_KEY", "")
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -19,6 +30,8 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        buildConfigField("String", "DOG_API_KEY", "\"$dogApiKey\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -37,6 +50,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -73,8 +87,6 @@ dependencies {
 
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
-    implementation("com.squareup.moshi:moshi-kotlin:1.15.2")
-    implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
 
     implementation(libs.coil.compose)
 
